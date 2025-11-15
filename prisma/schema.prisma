@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationships
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String
+
+  @@map("users")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  users         User[]
+  widgets       Widget[]
+  leads         Lead[]
+  conversations Conversation[]
+
+  @@map("tenants")
+}
+
+model Widget {
+  id           String   @id @default(cuid())
+  name         String
+  greetingText String   @default("Hello! How can I help you with your real estate needs today?")
+  primaryColor String   @default("#0ea5e9")
+  isActive     Boolean  @default(true)
+  publicKey    String   @unique @default(cuid())
+  position     String   @default("bottom-right") // bottom-right, bottom-left, top-right, top-left
+  bubbleText   String   @default("Chat with my AI assistant")
+  agentName    String?
+  companyName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationships
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String
+  leads         Lead[]
+  conversations Conversation[]
+
+  @@map("widgets")
+}
+
+model Lead {
+  id                String   @id @default(cuid())
+  name              String?
+  email             String?
+  phone             String?
+  intent            String?
+  qualificationScore Float?  @default(0)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relationships
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId      String
+  widget        Widget         @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  widgetId      String
+  conversations Conversation[]
+
+  @@map("leads")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String
+  widget   Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  widgetId String
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  leadId   String?
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id         String      @id @default(cuid())
+  text       String
+  senderType String      // "VISITOR", "AGENT", or "SYSTEM"
+  createdAt  DateTime    @default(now())
+  
+  // Relationships
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+
+  @@map("messages")
+}
