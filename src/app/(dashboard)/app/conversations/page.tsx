@@ -16,7 +16,13 @@ export default async function ConversationsPage({ searchParams }: ConversationsP
   const params = await searchParams || {}
   
   // Build where clause based on filters
-  const where: { tenantId: string; widgetId?: string; createdAt?: { gte: Date } } = { tenantId: session!.tenantId }
+  const where: {
+    tenantId: string;
+    widgetId?: string;
+    createdAt?: { gte: Date };
+    leadId?: { not: null } | null;
+    lead?: { OR: { name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }[] }
+  } = { tenantId: session!.tenantId }
   
   // Widget filter
   if (params.widget && params.widget !== 'all') {
