@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -22,7 +23,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Find and delete the invitation
     const invitation = await prisma.teamInvitation.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId
       }
     })
@@ -32,7 +33,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     await prisma.teamInvitation.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ success: true, message: 'Invitation cancelled successfully' })
