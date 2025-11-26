@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
+import { TRIAL_DAYS } from './stripe'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
 
@@ -9,6 +10,7 @@ export interface UserSession {
   email: string
   name: string
   tenantId: string
+  role: string
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -33,11 +35,18 @@ export function verifyToken(token: string): UserSession | null {
 
 export async function createUser(email: string, password: string, name: string, tenantName: string) {
   const hashedPassword = await hashPassword(password)
-  
-  // Create tenant first
+
+  // Calculate trial end date
+  const trialEndsAt = new Date()
+  trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS)
+
+  // Create tenant first with trial settings
   const tenant = await prisma.tenant.create({
     data: {
       name: tenantName,
+      plan: 'trial',
+      subscriptionStatus: 'trialing',
+      trialEndsAt,
     },
   })
 
@@ -57,6 +66,7 @@ export async function createUser(email: string, password: string, name: string, 
     email: user.email,
     name: user.name,
     tenantId: user.tenantId,
+    role: user.role,
   }
 }
 
@@ -79,5 +89,6 @@ export async function authenticateUser(email: string, password: string): Promise
     email: user.email,
     name: user.name,
     tenantId: user.tenantId,
+    role: user.role,
   }
 }

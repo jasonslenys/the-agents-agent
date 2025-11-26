@@ -30,14 +30,23 @@ model Tenant {
   name                 String
   averageCommission    Float?   @default(5000) // Average commission in dollars
   estimatedDealRate    Float?   @default(0.10) // 10% deal conversion rate
-  
+
   // Notification settings
   emailNotificationsEnabled Boolean? @default(false)
   additionalNotificationEmails String? // Comma-separated email list
-  
+
+  // Billing fields (Stripe)
+  stripeCustomerId     String?  @unique
+  plan                 String   @default("trial") // "trial", "solo", "team", "brokerage"
+  subscriptionStatus   String   @default("trialing") // "active", "trialing", "past_due", "canceled", "unpaid"
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-  
+
   // Relationships
   users         User[]
   widgets       Widget[]
