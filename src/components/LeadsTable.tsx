@@ -15,6 +15,11 @@ interface Lead {
   widget: {
     name: string
   }
+  assignedTo?: {
+    id: string
+    name: string
+    email: string
+  } | null
   conversations: Array<{
     id: string
     messages: Array<{
@@ -194,6 +199,9 @@ export default function LeadsTable({ leads, currentFilters }: LeadsTableProps) {
                 Score
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Assigned To
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Last Activity
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -207,7 +215,7 @@ export default function LeadsTable({ leads, currentFilters }: LeadsTableProps) {
           <tbody className="bg-white divide-y divide-gray-200">
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
+                <td colSpan={8} className="px-6 py-12 text-center">
                   <div className="text-center">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -299,6 +307,16 @@ export default function LeadsTable({ leads, currentFilters }: LeadsTableProps) {
                       }`}>
                         {Math.round(lead.qualificationScore || 0)}%
                       </span>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {lead.assignedTo ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {lead.assignedTo.name}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-500">Unassigned</span>
+                      )}
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

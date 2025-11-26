@@ -8,7 +8,16 @@ export default async function SettingsPage() {
   const user = await prisma.user.findUnique({
     where: { id: session!.id },
     include: {
-      tenant: true
+      tenant: {
+        select: {
+          id: true,
+          name: true,
+          averageCommission: true,
+          estimatedDealRate: true,
+          emailNotificationsEnabled: true,
+          additionalNotificationEmails: true
+        }
+      }
     }
   })
 

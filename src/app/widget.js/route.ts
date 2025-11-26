@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const widgetJs = `
 (function() {
-  // Get widget ID from script tag
-  const script = document.currentScript || document.querySelector('script[data-widget-id]');
-  const widgetId = script?.getAttribute('data-widget-id');
+  // Get widget key from script tag (support both data-widget-key and data-widget-id for backwards compatibility)
+  const script = document.currentScript || document.querySelector('script[data-widget-key], script[data-widget-id]');
+  const widgetKey = script?.getAttribute('data-widget-key') || script?.getAttribute('data-widget-id');
   
-  if (!widgetId) {
-    console.error('Widget ID not found. Please add data-widget-id attribute to script tag.');
+  if (!widgetKey) {
+    console.error('Widget key not found. Please add data-widget-key attribute to script tag.');
     return;
   }
 
@@ -17,6 +17,7 @@ export async function GET() {
   let conversationId = null;
   let widgetConfig = null;
   let sessionId = generateSessionId();
+  const API_BASE = script?.getAttribute('data-api-base') || window.location.protocol + '//' + script?.src.split('/')[2];
   let conversationState = {
     hasGreeted: false,
     hasName: false,
@@ -32,11 +33,46 @@ export async function GET() {
     return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
   }
 
+  // Track analytics events
+  function trackEvent(eventType) {
+    try {
+      fetch(\`\${API_BASE}/api/analytics/events\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          widgetKey,
+          eventType,
+          sessionId,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer || window.location.href
+        }),
+      }).catch(error => {
+        // Silently fail analytics to not break widget functionality
+        console.debug('Analytics tracking failed:', error);
+      });
+    } catch (error) {
+      console.debug('Analytics tracking failed:', error);
+    }
+  }
+
+  // Create or find widget container
+  function ensureWidgetContainer() {
+    let widgetContainer = document.getElementById('realestate-ai-widget');
+    if (!widgetContainer) {
+      // Create container dynamically if not present
+      widgetContainer = document.createElement('div');
+      widgetContainer.id = 'realestate-ai-widget';
+      widgetContainer.style.cssText = 'position: fixed; z-index: 999999; pointer-events: none;';
+      document.body.appendChild(widgetContainer);
+    }
+    return widgetContainer;
+  }
+
   // Create widget HTML
   function createWidget() {
-    const widgetContainer = document.getElementById('realestate-ai-widget');
+    const widgetContainer = ensureWidgetContainer();
     if (!widgetContainer) {
-      console.error('Widget container element not found. Please add <div id="realestate-ai-widget"></div>');
+      console.error('Failed to create widget container');
       return;
     }
 
@@ -191,14 +227,20 @@ export async function GET() {
   // Load widget configuration
   async function loadConfig() {
     try {
-      const response = await fetch(\`/api/widget-config/\${widgetId}\`);
+      const response = await fetch(\`\${API_BASE}/api/widget-config?key=\${widgetKey}\`);
       const data = await response.json();
-      widgetConfig = data.config;
-      createWidget();
       
-      // Start conversation
-      if (widgetConfig) {
+      if (data.success && data.config) {
+        widgetConfig = data.config;
+        createWidget();
+        
+        // Track widget view
+        trackEvent('widget_view');
+        
+        // Start conversation
         startConversation();
+      } else {
+        console.error('Failed to load widget config:', data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Failed to load widget config:', error);
@@ -208,11 +250,11 @@ export async function GET() {
   // Start conversation
   async function startConversation() {
     try {
-      const response = await fetch('/api/conversations', {
+      const response = await fetch(\`\${API_BASE}/api/conversations\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          widgetId,
+          widgetId: widgetKey,
           sessionId,
           userAgent: navigator.userAgent,
           referrer: document.referrer || window.location.href
@@ -220,6 +262,9 @@ export async function GET() {
       });
       const data = await response.json();
       conversationId = data.conversationId;
+      
+      // Track conversation started
+      trackEvent('conversation_started');
       
       // Add personalized greeting message
       const greeting = widgetConfig?.greetingText || 
@@ -263,7 +308,7 @@ export async function GET() {
 
     try {
       // Send to backend with conversation state
-      const response = await fetch('/api/messages', {
+      const response = await fetch(\`\${API_BASE}/api/messages\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -299,7 +344,7 @@ export async function GET() {
     if (!conversationState.hasName) {
       // Simple name detection - first message with "i'm" or "my name is"
       if (lowerMessage.includes("i'm ") || lowerMessage.includes("my name is") || lowerMessage.includes("im ")) {
-        const nameMatch = message.match(/(?:i'm|my name is|im)\\s+([a-zA-Z]+)/i);
+        const nameMatch = message.match(/(?:i'm|my name is|im)\s+([a-zA-Z]+)/i);
         if (nameMatch) {
           conversationState.visitorName = nameMatch[1];
           conversationState.hasName = true;
@@ -308,7 +353,7 @@ export async function GET() {
     }
     
     // Extract email if present
-    const emailMatch = message.match(/\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/);
+    const emailMatch = message.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
     if (emailMatch && !conversationState.hasEmail) {
       conversationState.visitorEmail = emailMatch[0];
       conversationState.hasEmail = true;

@@ -8,7 +8,7 @@ export default function DemoPage() {
     // Load widget script dynamically on client side
     const script = document.createElement('script')
     script.src = '/widget.js'
-    script.setAttribute('data-widget-id', 'cmhzel1mf000becfz1ax6lshv')
+    script.setAttribute('data-widget-key', 'cmhztirji000hphyptd8w45u3')
     document.head.appendChild(script)
     
     return () => {

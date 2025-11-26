@@ -11,13 +11,28 @@ interface Lead {
   intent: string | null
   qualificationScore: number | null
   notes: string | null
+  assignedUserId: string | null
+  assignedTo?: {
+    id: string
+    name: string
+    email: string
+  } | null
+}
+
+interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: string
 }
 
 interface LeadDetailFormProps {
   lead: Lead
+  teamMembers: TeamMember[]
+  userRole: string
 }
 
-export default function LeadDetailForm({ lead }: LeadDetailFormProps) {
+export default function LeadDetailForm({ lead, teamMembers, userRole }: LeadDetailFormProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -27,7 +42,8 @@ export default function LeadDetailForm({ lead }: LeadDetailFormProps) {
     phone: lead.phone || '',
     intent: lead.intent || '',
     qualificationScore: lead.qualificationScore || 0,
-    notes: lead.notes || ''
+    notes: lead.notes || '',
+    assignedUserId: lead.assignedUserId || ''
   })
 
   const handleSave = async () => {
@@ -66,7 +82,8 @@ export default function LeadDetailForm({ lead }: LeadDetailFormProps) {
       phone: lead.phone || '',
       intent: lead.intent || '',
       qualificationScore: lead.qualificationScore || 0,
-      notes: lead.notes || ''
+      notes: lead.notes || '',
+      assignedUserId: lead.assignedUserId || ''
     })
     setIsEditing(false)
   }
@@ -139,6 +156,19 @@ export default function LeadDetailForm({ lead }: LeadDetailFormProps) {
                   style={{ width: `${Math.min(100, Math.max(0, lead.qualificationScore || 0))}%` }}
                 />
               </div>
+            </dd>
+          </div>
+          
+          <div className="md:col-span-2">
+            <dt className="text-sm font-medium text-gray-500">Assigned To</dt>
+            <dd className="mt-1">
+              {lead.assignedTo ? (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {lead.assignedTo.name} ({lead.assignedTo.email})
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">Unassigned</span>
+              )}
             </dd>
           </div>
         </div>
@@ -265,6 +295,24 @@ export default function LeadDetailForm({ lead }: LeadDetailFormProps) {
             placeholder="Add any notes about this lead..."
           />
         </div>
+        
+        {userRole === 'owner' && teamMembers.length > 0 && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Assign To</label>
+            <select
+              value={formData.assignedUserId}
+              onChange={(e) => setFormData(prev => ({ ...prev, assignedUserId: e.target.value }))}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Unassigned</option>
+              {teamMembers.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} ({member.role})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   )

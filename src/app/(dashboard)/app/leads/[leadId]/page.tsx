@@ -12,6 +12,24 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const session = await getSession()
   const { leadId } = await params
   
+  // Get user details to check role
+  const user = await prisma.user.findUnique({
+    where: { id: session!.id },
+    select: { role: true }
+  })
+  
+  // Fetch team members for assignment (only if user is owner)
+  const teamMembers = user?.role === 'owner' ? await prisma.user.findMany({
+    where: { tenantId: session!.tenantId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true
+    },
+    orderBy: { name: 'asc' }
+  }) : []
+  
   const lead = await prisma.lead.findFirst({
     where: { 
       id: leadId,
@@ -19,6 +37,13 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     },
     include: {
       widget: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
       conversations: {
         orderBy: { createdAt: 'desc' },
         include: {
@@ -60,7 +85,11 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               <h2 className="text-lg font-medium text-gray-900">Lead Information</h2>
             </div>
             <div className="p-6">
-              <LeadDetailForm lead={lead} />
+              <LeadDetailForm 
+                lead={lead} 
+                teamMembers={teamMembers}
+                userRole={user?.role || 'agent'}
+              />
             </div>
           </div>
 

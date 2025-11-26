@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
     if (!widget) {
       return NextResponse.json(
         { error: 'Widget not found or inactive' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       )
     }
 
@@ -40,12 +47,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       conversationId: conversation.id 
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }
     })
   } catch (error) {
     console.error('Conversation creation error:', error)
     return NextResponse.json(
       { error: 'Failed to create conversation' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
     )
   }
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json(
+    {},
+    {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    }
+  )
 }

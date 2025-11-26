@@ -31,8 +31,10 @@ export default function WidgetList({ widgets }: WidgetListProps) {
   }
 
   const getEmbedCode = (publicKey: string) => {
-    return `<script src="${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/widget.js" data-widget-id="${publicKey}"></script>
-<div id="realestate-ai-widget"></div>`
+    return `<script 
+  src="https://your-domain.com/widget.js" 
+  data-widget-key="${publicKey}">
+</script>`
   }
 
   if (widgets.length === 0) {
@@ -58,9 +60,9 @@ export default function WidgetList({ widgets }: WidgetListProps) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
       {widgets.map((widget) => (
-        <div key={widget.id} className="bg-white rounded-lg shadow border border-gray-200">
+        <div key={widget.id} className="bg-white rounded-lg shadow border border-gray-200 min-w-0">
           <div className="p-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">{widget.name}</h3>
@@ -104,7 +106,7 @@ export default function WidgetList({ widgets }: WidgetListProps) {
                   {copiedId === widget.id ? 'Copied!' : 'Copy'}
                 </button>
               </div>
-              <code className="mt-1 block w-full text-xs bg-gray-50 p-2 rounded border text-gray-800 overflow-x-auto">
+              <code className="mt-1 block w-full text-xs bg-gray-50 p-2 rounded border text-gray-800 overflow-x-auto whitespace-pre-wrap break-words">
                 {getEmbedCode(widget.publicKey)}
               </code>
             </div>

@@ -41,12 +41,13 @@ export async function createUser(email: string, password: string, name: string, 
     },
   })
 
-  // Create user
+  // Create user as owner (first user in tenant)
   const user = await prisma.user.create({
     data: {
       email,
       passwordHash: hashedPassword,
       name,
+      role: 'owner',
       tenantId: tenant.id,
     },
   })

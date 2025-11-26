@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { enqueueNewLeadNotification } from '@/lib/notifications'
 
 interface ConversationState {
   hasName?: boolean
@@ -90,7 +91,7 @@ function generateAIResponse(message: string, conversationHistory: Message[] = []
   
   // Email collection after intent
   if (updatedState.hasName && updatedState.hasIntent && !updatedState.hasEmail) {
-    const emailMatch = message.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+    const emailMatch = message.match(/\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/);
     if (emailMatch) {
       updatedState.visitorEmail = emailMatch[0];
       updatedState.hasEmail = true;
@@ -296,11 +297,23 @@ export async function POST(request: NextRequest) {
           }
         })
 
+        // Track lead creation event
+        await prisma.widgetEvent.create({
+          data: {
+            eventType: 'lead_created',
+            tenantId: conversation.tenantId,
+            widgetId: conversation.widgetId,
+          }
+        })
+
         // Link conversation to lead
         await prisma.conversation.update({
           where: { id: conversationId },
           data: { leadId: newLead.id }
         })
+
+        // Trigger notification for new lead
+        enqueueNewLeadNotification(newLead.id, conversation.tenantId)
       }
     }
 

@@ -61,6 +61,13 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
     orderBy: { createdAt: 'desc' },
     include: {
       widget: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
       conversations: {
         take: 1,
         orderBy: { createdAt: 'desc' },

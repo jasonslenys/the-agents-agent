@@ -12,27 +12,39 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  role         String   @default("owner") // "owner", "agent"
+  isAdmin      Boolean  @default(false) // Platform admin flag
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
   // Relationships
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tenantId     String
+  assignedLeads Lead[]  @relation("AssignedLeads")
 
   @@map("users")
 }
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  averageCommission    Float?   @default(5000) // Average commission in dollars
+  estimatedDealRate    Float?   @default(0.10) // 10% deal conversion rate
+  
+  // Notification settings
+  emailNotificationsEnabled Boolean? @default(false)
+  additionalNotificationEmails String? // Comma-separated email list
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
   
   // Relationships
   users         User[]
   widgets       Widget[]
   leads         Lead[]
   conversations Conversation[]
+  events        WidgetEvent[]
+  invitations   TeamInvitation[]
 
   @@map("tenants")
 }
@@ -56,6 +68,7 @@ model Widget {
   tenantId      String
   leads         Lead[]
   conversations Conversation[]
+  events        WidgetEvent[]
 
   @@map("widgets")
 }
@@ -68,6 +81,7 @@ model Lead {
   intent            String?
   qualificationScore Float?  @default(0)
   notes             String?
+  assignedUserId    String?  // User assigned to handle this lead
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
@@ -76,6 +90,7 @@ model Lead {
   tenantId      String
   widget        Widget         @relation(fields: [widgetId], references: [id], onDelete: Cascade)
   widgetId      String
+  assignedUser  User?          @relation("AssignedLeads", fields: [assignedUserId], references: [id], onDelete: SetNull)
   conversations Conversation[]
 
   @@map("leads")
@@ -109,4 +124,43 @@ model Message {
   conversationId String
 
   @@map("messages")
+}
+
+model WidgetEvent {
+  id        String   @id @default(cuid())
+  eventType String   // "widget_view", "conversation_started", "lead_created"
+  sessionId String?  // Optional session identifier for tracking unique visitors
+  userAgent String?  // Browser user agent
+  referrer  String?  // Page where widget was loaded
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String
+  widget   Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  widgetId String
+
+  @@index([tenantId, eventType])
+  @@index([widgetId, eventType])
+  @@index([createdAt])
+  @@map("widget_events")
+}
+
+model TeamInvitation {
+  id           String   @id @default(cuid())
+  email        String
+  role         String   @default("agent") // "agent" or "owner"
+  token        String   @unique @default(cuid())
+  status       String   @default("pending") // "pending", "accepted", "expired"
+  invitedBy    String   // User ID who sent the invitation
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationships
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String
+
+  @@unique([email, tenantId, status])
+  @@map("team_invitations")
 }

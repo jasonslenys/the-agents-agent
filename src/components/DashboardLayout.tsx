@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { UserSession } from '@/lib/auth'
@@ -12,8 +12,26 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ user, children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string>('agent')
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    // Fetch user role
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const userData = await response.json()
+          setUserRole(userData.role || 'agent')
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+
+    fetchUserRole()
+  }, [])
 
   const handleLogout = async () => {
     const response = await fetch('/api/auth/logout', { method: 'POST' })
@@ -22,7 +40,7 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
     }
   }
 
-  const navigation = [
+  const baseNavigation = [
     {
       name: 'Dashboard',
       href: '/app/dashboard',
@@ -61,6 +79,15 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
       ),
     },
     {
+      name: 'Analytics',
+      href: '/app/analytics',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
       name: 'Settings',
       href: '/app/settings',
       icon: (
@@ -71,6 +98,24 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
       ),
     },
   ]
+
+  // Add Team navigation for owners only
+  const ownerOnlyNavigation = [
+    {
+      name: 'Team',
+      href: '/app/team',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        </svg>
+      ),
+    }
+  ]
+
+  // Build final navigation based on user role
+  const navigation = userRole === 'owner' 
+    ? [...baseNavigation.slice(0, -1), ...ownerOnlyNavigation, baseNavigation[baseNavigation.length - 1]]
+    : baseNavigation
 
   return (
     <div className="flex h-screen bg-gray-100">
