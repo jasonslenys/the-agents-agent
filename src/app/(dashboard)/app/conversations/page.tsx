@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import ConversationsTable from '@/components/ConversationsTable'
+import { Prisma } from '@prisma/client'
 
 interface ConversationsPageProps {
   searchParams?: Promise<{
@@ -14,26 +15,20 @@ interface ConversationsPageProps {
 export default async function ConversationsPage({ searchParams }: ConversationsPageProps) {
   const session = await getSession()
   const params = await searchParams || {}
-  
+
   // Build where clause based on filters
-  const where: {
-    tenantId: string;
-    widgetId?: string;
-    createdAt?: { gte: Date };
-    leadId?: { not: null } | null;
-    lead?: { OR: { name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }[] }
-  } = { tenantId: session!.tenantId }
-  
+  const where: Prisma.ConversationWhereInput = { tenantId: session!.tenantId }
+
   // Widget filter
   if (params.widget && params.widget !== 'all') {
     where.widgetId = params.widget
   }
-  
+
   // Date range filter
   if (params.dateRange) {
     const now = new Date()
     let dateThreshold: Date
-    
+
     switch (params.dateRange) {
       case 'last7days':
         dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -44,29 +39,29 @@ export default async function ConversationsPage({ searchParams }: ConversationsP
       default:
         dateThreshold = new Date(0) // All time
     }
-    
+
     if (params.dateRange !== 'all') {
       where.createdAt = { gte: dateThreshold }
     }
   }
-  
+
   // Has lead filter
   if (params.hasLead === 'true') {
     where.leadId = { not: null }
   } else if (params.hasLead === 'false') {
     where.leadId = null
   }
-  
+
   // Search filter (by lead name or email)
   if (params.search) {
     where.lead = {
       OR: [
-        { name: { contains: params.search, mode: 'insensitive' } },
-        { email: { contains: params.search, mode: 'insensitive' } }
+        { name: { contains: params.search, mode: 'insensitive' as Prisma.QueryMode } },
+        { email: { contains: params.search, mode: 'insensitive' as Prisma.QueryMode } }
       ]
     }
   }
-  
+
   const conversations = await prisma.conversation.findMany({
     where,
     orderBy: { updatedAt: 'desc' },

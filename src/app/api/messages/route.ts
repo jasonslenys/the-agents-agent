@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      const { intent, qualificationScore } = extractLeadInfo(updatedConversation!.messages, updatedState)
+      const { intent, qualificationScore } = extractLeadInfo(updatedConversation!.messages, updatedState ?? undefined)
 
       if (conversation.lead) {
         // Update existing lead

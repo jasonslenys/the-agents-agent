@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, TeamInvitation } from '@/lib/types'
 
 interface TeamMember {
   id: string

@@ -66,14 +66,14 @@ export async function notifyNewLead({ leadId, tenantId }: NotifyNewLeadParams): 
     // Determine app base URL
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-    // Prepare notification data
+    // Prepare notification data (convert null to undefined for type compatibility)
     const notificationData = {
       leadId: lead.id,
-      leadName: lead.name,
-      leadEmail: lead.email,
-      leadPhone: lead.phone,
-      intent: lead.intent,
-      qualificationScore: lead.qualificationScore,
+      leadName: lead.name ?? undefined,
+      leadEmail: lead.email ?? undefined,
+      leadPhone: lead.phone ?? undefined,
+      intent: lead.intent ?? undefined,
+      qualificationScore: lead.qualificationScore ?? undefined,
       createdAt: lead.createdAt,
       appBaseUrl
     }

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth/next'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 // Simple session validation (replace with your auth system)
 async function getCurrentUser() {

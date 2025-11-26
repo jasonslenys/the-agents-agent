@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import LeadsTable from '@/components/LeadsTable'
+import { Prisma } from '@prisma/client'
 
 interface LeadsPageProps {
   searchParams?: Promise<{
@@ -13,25 +14,20 @@ interface LeadsPageProps {
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const session = await getSession()
   const params = await searchParams || {}
-  
+
   // Build where clause based on filters
-  const where: { 
-    tenantId: string; 
-    intent?: string; 
-    createdAt?: { gte: Date }; 
-    OR?: Array<{ name: { contains: string; mode: string } } | { email: { contains: string; mode: string } }>
-  } = { tenantId: session!.tenantId }
-  
+  const where: Prisma.LeadWhereInput = { tenantId: session!.tenantId }
+
   // Intent filter
   if (params.intent && params.intent !== 'all') {
     where.intent = params.intent
   }
-  
+
   // Date range filter
   if (params.dateRange) {
     const now = new Date()
     let dateThreshold: Date
-    
+
     switch (params.dateRange) {
       case 'last7days':
         dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -42,20 +38,20 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
       default:
         dateThreshold = new Date(0) // All time
     }
-    
+
     if (params.dateRange !== 'all') {
       where.createdAt = { gte: dateThreshold }
     }
   }
-  
+
   // Search filter
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search, mode: 'insensitive' } },
-      { email: { contains: params.search, mode: 'insensitive' } }
+      { name: { contains: params.search, mode: 'insensitive' as Prisma.QueryMode } },
+      { email: { contains: params.search, mode: 'insensitive' as Prisma.QueryMode } }
     ]
   }
-  
+
   const leads = await prisma.lead.findMany({
     where,
     orderBy: { createdAt: 'desc' },
