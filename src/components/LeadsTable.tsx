@@ -159,7 +159,7 @@ export default function LeadsTable({ leads, currentFilters }: LeadsTableProps) {
               )}
               {currentFilters.search && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                  Search: "{currentFilters.search}"
+                  Search: &quot;{currentFilters.search}&quot;
                 </span>
               )}
               <button

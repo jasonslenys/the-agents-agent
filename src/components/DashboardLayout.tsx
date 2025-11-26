@@ -11,7 +11,6 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ user, children }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userRole, setUserRole] = useState<string>('agent')
   const pathname = usePathname()
   const router = useRouter()
@@ -125,7 +124,7 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
           <div className="flex flex-col h-0 flex-1 bg-gray-800">
             <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gray-900">
               <Link href="/" className="text-white font-bold text-lg">
-                The Agent's Agent
+                The Agent&apos;s Agent
               </Link>
             </div>
             <div className="flex-1 flex flex-col overflow-y-auto">
