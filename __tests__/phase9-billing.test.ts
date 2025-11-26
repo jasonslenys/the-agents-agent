@@ -97,12 +97,13 @@ describe('Phase 9: Billing & Subscription Gating', () => {
         expect(isTrialExpired(null, 'trialing')).toBe(true)
       })
 
-      it('should return true for canceled status even with future trial date', () => {
+      it('should return false for canceled status with future trial date', () => {
         const futureDate = new Date()
         futureDate.setDate(futureDate.getDate() + 7)
-        // Canceled status doesn't automatically mean trial expired per the function logic
-        // The function checks if status is 'active' first
-        expect(isTrialExpired(futureDate, 'canceled')).toBe(true)
+        // Canceled status with future date means trial hasn't technically expired
+        // The subscription was canceled, but the trial period itself hasn't ended
+        // This is correct - we use isSubscriptionActive to check if service should work
+        expect(isTrialExpired(futureDate, 'canceled')).toBe(false)
       })
     })
 
@@ -265,14 +266,16 @@ describe('Phase 9: Billing & Subscription Gating', () => {
     }
 
     function canUseWidget(tenant: TenantBillingState): boolean {
-      const isActive = isSubscriptionActive(tenant.subscriptionStatus)
-      if (isActive) return true
+      // For active paid subscriptions, always allow
+      if (tenant.subscriptionStatus === 'active') return true
 
-      // Check if still in valid trial
-      if (tenant.subscriptionStatus === 'trialing' && tenant.trialEndsAt) {
-        return !isTrialExpired(tenant.trialEndsAt, tenant.subscriptionStatus)
+      // For trialing status, check if trial has expired
+      if (tenant.subscriptionStatus === 'trialing') {
+        const trialExpired = isTrialExpired(tenant.trialEndsAt, tenant.subscriptionStatus)
+        return !trialExpired
       }
 
+      // For all other statuses (past_due, canceled, unpaid), block
       return false
     }
 
@@ -489,17 +492,28 @@ describe('Phase 9: Billing & Subscription Gating', () => {
         return { canServe: false, message: 'Widget is disabled' }
       }
 
-      const isActive = isSubscriptionActive(subscriptionStatus)
-      const trialExpired = isTrialExpired(trialEndsAt, subscriptionStatus)
-
-      if (!isActive && trialExpired) {
-        return {
-          canServe: false,
-          message: 'This chat service is temporarily unavailable. Please contact the site owner.',
-        }
+      // Active paid subscription - always allow
+      if (subscriptionStatus === 'active') {
+        return { canServe: true }
       }
 
-      return { canServe: true }
+      // Trialing - check if trial expired
+      if (subscriptionStatus === 'trialing') {
+        const trialExpired = isTrialExpired(trialEndsAt, subscriptionStatus)
+        if (trialExpired) {
+          return {
+            canServe: false,
+            message: 'This chat service is temporarily unavailable. Please contact the site owner.',
+          }
+        }
+        return { canServe: true }
+      }
+
+      // All other statuses (past_due, canceled, unpaid) - block
+      return {
+        canServe: false,
+        message: 'This chat service is temporarily unavailable. Please contact the site owner.',
+      }
     }
 
     it('should serve widget for active subscription', () => {
