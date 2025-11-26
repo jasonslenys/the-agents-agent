@@ -15,7 +15,7 @@ interface Lead {
   widget: {
     name: string
   }
-  assignedTo?: {
+  assignedUser?: {
     id: string
     name: string
     email: string
@@ -310,9 +310,9 @@ export default function LeadsTable({ leads, currentFilters }: LeadsTableProps) {
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {lead.assignedTo ? (
+                      {lead.assignedUser ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {lead.assignedTo.name}
+                          {lead.assignedUser.name}
                         </span>
                       ) : (
                         <span className="text-sm text-gray-500">Unassigned</span>

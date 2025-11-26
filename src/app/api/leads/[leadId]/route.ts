@@ -81,7 +81,7 @@ async function handleLeadUpdate(
       where: { id: leadId },
       data: updateData,
       include: {
-        assignedTo: {
+        assignedUser: {
           select: {
             id: true,
             name: true,

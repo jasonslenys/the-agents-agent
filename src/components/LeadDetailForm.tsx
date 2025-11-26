@@ -12,7 +12,7 @@ interface Lead {
   qualificationScore: number | null
   notes: string | null
   assignedUserId: string | null
-  assignedTo?: {
+  assignedUser?: {
     id: string
     name: string
     email: string
@@ -162,9 +162,9 @@ export default function LeadDetailForm({ lead, teamMembers, userRole }: LeadDeta
           <div className="md:col-span-2">
             <dt className="text-sm font-medium text-gray-500">Assigned To</dt>
             <dd className="mt-1">
-              {lead.assignedTo ? (
+              {lead.assignedUser ? (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {lead.assignedTo.name} ({lead.assignedTo.email})
+                  {lead.assignedUser.name} ({lead.assignedUser.email})
                 </span>
               ) : (
                 <span className="text-sm text-gray-500">Unassigned</span>

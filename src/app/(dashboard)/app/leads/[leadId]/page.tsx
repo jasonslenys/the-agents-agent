@@ -37,7 +37,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     },
     include: {
       widget: true,
-      assignedTo: {
+      assignedUser: {
         select: {
           id: true,
           name: true,
